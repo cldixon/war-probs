@@ -1,20 +1,59 @@
 import random
+from collections import namedtuple
 from enum import IntEnum, StrEnum
-from typing import TypedDict
-
-import polars as pl
+from typing import Literal
 
 DECK_LENGTH: int = 52
 
+NUM_PLAYERS = 3
 
-class CardFamily(StrEnum):
+_VALID_SUITS: list[str] = ["clubs", "diamonds", "hearts", "spades"]
+
+
+class Suit(StrEnum):
     CLUBS = "clubs"
     DIAMONDS = "diamonds"
     HEARTS = "hearts"
     SPADES = "spades"
 
 
-class CardNumber(IntEnum):
+SuitType = Literal["clubs", "diamonds", "hearts", "spades"]
+
+
+class Rank(StrEnum):
+    TWO = "two"
+    THREE = "three"
+    FOUR = "four"
+    FIVE = "five"
+    SIX = "six"
+    SEVEN = "seven"
+    EIGHT = "eight"
+    NINE = "nine"
+    TEN = "ten"
+    JACK = "jack"
+    QUEEN = "queen"
+    KING = "king"
+    ACE = "ace"
+
+
+RankType = Literal[
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "jack",
+    "queen",
+    "king",
+    "ace",
+]
+
+
+class Value(IntEnum):
     TWO = 2
     THREE = 3
     FOUR = 4
@@ -22,7 +61,7 @@ class CardNumber(IntEnum):
     SIX = 6
     SEVEN = 7
     EIGHT = 8
-    NIN = 9
+    NINE = 9
     TEN = 10
     JACK = 11
     QUEEN = 12
@@ -30,18 +69,64 @@ class CardNumber(IntEnum):
     ACE = 14
 
 
-class Card(TypedDict):
-    number: int
-    family: str
+_RANK_TO_VALUE_MAP: dict[str, int] = {
+    "two": Value.TWO.value,
+    "three": Value.THREE.value,
+    "four": Value.FOUR.value,
+    "five": Value.FIVE.value,
+    "six": Value.SIX.value,
+    "seven": Value.SEVEN.value,
+    "eight": Value.EIGHT.value,
+    "nine": Value.NINE.value,
+    "ten": Value.TEN.value,
+    "jack": Value.JACK.value,
+    "queen": Value.QUEEN.value,
+    "king": Value.KING.value,
+    "ace": Value.ACE.value,
+}
+
+
+def map_rank_to_value(rank: RankType) -> int:
+    return _RANK_TO_VALUE_MAP[rank.lower()]
+
+
+## ------------------------------------------------- ##
+## ---- PLAYING CARD REPRESENTED AS NAMED TUPLE ---- ##
+## ------------------------------------------------- ##
+
+Card = namedtuple("Card", ["rank", "suit", "value"])
+
+
+def display_card(card: Card) -> str:
+    return f"[{card.rank} of {card.suit}]"
+
+
+def get_card(rank: RankType, suit: SuitType) -> Card:
+    assert suit.lower() in _VALID_SUITS, f"Invalid suit: {suit}"
+    return Card(rank=rank.lower(), suit=suit.lower(), value=map_rank_to_value(rank))
+
+
+def get_suit(suit: SuitType) -> list[Card]:
+    assert suit.lower() in _VALID_SUITS, f"Invalid suit: {suit}"
+    return [
+        Card(rank=rank.lower(), suit=suit.lower(), value=map_rank_to_value(rank.value))
+        for rank in Rank
+    ]
+
+
+## ------------------------------------------------- ##
+## ---- FUNCTION TO INITIALIZE DECK OF CARDS ------- ##
+## ---------- E.G., LIST OF NAMED-TUPLES ----------- ##
+## ------------------------------------------------- ##
 
 
 def load_cards(shuffle: bool = True) -> list[Card]:
-    cards = []
+    cards: list[Card] = []
 
     ## -- create numbered cards
-    for number in CardNumber:
-        for family in CardFamily:
-            cards.append(Card(number=number.value, family=family.value))
+    for rank, value in zip(Rank, Value):
+        for suit in Suit:
+            cards.append(Card(rank=rank.value, suit=suit.value, value=value.value))
 
     ## -- qa check !!!
     assert len(cards) == DECK_LENGTH
@@ -51,61 +136,3 @@ def load_cards(shuffle: bool = True) -> list[Card]:
         cards = random.sample(cards, k=len(cards))
 
     return cards
-
-
-def display_card(card: Card) -> str:
-    return f"[{card['number']} of {card['family']}]"
-
-
-def distribute_cards_to_players(
-    cards: list[Card], num_players: int = 2
-) -> list[list[Card]]:
-    ## -- qa checks
-    assert (
-        num_players > 1
-    ), f"Game must have at least 2 players. Specified number of players '{num_players}' is not valid."
-    assert (
-        len(cards) == DECK_LENGTH
-    ), f"Card deck must have exactly {DECK_LENGTH} cards, provided deck has {len(cards)} cards."
-
-    cards_per_player = len(cards) // num_players
-    remaining_cards = len(cards) % num_players
-
-    players_hands: list[list[Card]] = []
-    card_index: int = 0
-    for player in range(num_players):
-        if player < remaining_cards:
-            num_cards = cards_per_player + 1
-        else:
-            num_cards = cards_per_player
-
-        players_hands.append(cards[card_index : card_index + num_cards])
-        card_index += num_cards
-
-    return players_hands
-
-
-class CardIndex(TypedDict):
-    name: str
-    value: int
-    family: CardFamily
-    player: int
-    index: int
-
-
-def convert_hands_to_table(players_hands: list[list[Card]]) -> pl.DataFrame:
-    master_card_index = []
-    for player_num, player_hand in enumerate(players_hands):
-        for idx, card in enumerate(player_hand):
-            master_card_index.append(
-                CardIndex(
-                    **{
-                        "name": f"{card['number']}_of_{card['family']}",
-                        "value": card["number"],
-                        "family": card["family"],
-                        "player": player_num,
-                        "index": idx,
-                    }
-                )
-            )
-    return pl.DataFrame(master_card_index)
