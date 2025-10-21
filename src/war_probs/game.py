@@ -234,7 +234,6 @@ class Game:
             game_state = get_game_state(players_hands)
 
             if _num_turns > self.max_turns:
-                print("Game exceeding 5000 turns...")
                 break
 
         ## -- return game results
