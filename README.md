@@ -43,6 +43,28 @@ With card values ranging from 2 to 14 (i.e., _ace_), we can visualize all possib
 
 I was interested in the distribution of turn counts for a game of war. Using the simulator, I ran a large number of games (~25,000) and collected the number of turns for each game before a player won. The distribution is shown below.
 
+```python
+from war_probs.game import Game
+
+NUM_SIMULATIONS: int = 25_000
+MAX_TURNS: int = 5_000
+
+completed_games: list = []
+draw_games: list = []
+
+for _ in range(NUM_SIMULATIONS):
+    ## -- initialize a game
+    game = Game(max_turns=MAX_TURNS)
+
+    ## -- simulate game
+    results = game.play()
+
+    if results["completed_turns"] < MAX_TURNS:
+        completed_games.append(results)
+    else:
+        draw_games.append(results)
+```
+
 ![Turn Count Distribution](img/turn_count_histogram.png)
 
 
