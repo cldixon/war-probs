@@ -16,9 +16,16 @@ If you LOSE:
     Turn Value = -(Card_lost × (1 + margin/13)^k)
 
 Where:
-- `margin` is the difference between the winning (or max value) card and the losing card
-- `k` is a tuning parameter (maybe k=1 or k=2).
+* `margin` is the difference between the winning (or max value) card and the losing card
+* `k` is a tuning parameter (maybe k=1 or k=2).
 ```
+
+This metric attempts to quantify the following aspects of a turn:
+
+* value of card won/lost, i.e., `10 > 9`
+* efficiency of card played vs. card won, i.e., `(10 > 9) > (10 > 2)`
+
+This results in a nice, symmetric metric which captures value of a win and loss scenario. The highest possible score is playing an _ace_ against a _king_ (`11.1`), and correspondingly the worst possible score is losing a _king_ against an _ace_ (`-11.1`). If a player plays an _ace_ against a _two_ results in a score of `0`, as it is inefficient to use the most powerful card against the weakest.
 
 To generate these scores, use the following Python code:
 
@@ -72,5 +79,5 @@ for _ in range(NUM_SIMULATIONS):
 
 Here are additional things I may work on next:
 
-- collect turn value scores at each turn in a game simulation and measure game swings
-- create a metric to quantify value for winning a _war_ scenario, in which multiple cards are transferred from the loser to the winner's hand
+* collect turn value scores at each turn in a game simulation and measure game swings
+* create a metric to quantify value for winning a _war_ scenario, in which multiple cards are transferred from the loser to the winner's hand
